@@ -262,8 +262,6 @@ class EPD:
         # Image must be in mode 1.
         image_monocolor = image.convert('1')
         imwidth, imheight = image_monocolor.size
-        print(imwidth)
-        print(imheight)
         if imwidth != self.width or imheight != self.height:
             raise ValueError('Image must be same dimensions as display \
                 ({0}x{1}).' .format(self.width, self.height))

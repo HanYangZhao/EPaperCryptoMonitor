@@ -124,8 +124,8 @@ def generateMarketDisplay(markets,exchange):
     blackMask = Image.new('1', (264, 176))
     redMask = Image.new('1', (264, 176))
     trans = Image.new('RGBA', (264, 176))
-    helveticaFont = ImageFont.truetype('/usr/share/fonts/truetype/freefont/helvetica.ttf', 20)
-    helveticaSmall = ImageFont.truetype('/usr/share/fonts/truetype/freefont/helvetica.ttf', 17)
+    helveticaFont = ImageFont.truetype('helvetica.ttf', 20)
+    helveticaSmall = ImageFont.truetype('helvetica.ttf', 17)
     blackDraw = ImageDraw.Draw(blackMask)
     redDraw = ImageDraw.Draw(redMask)
 
