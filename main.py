@@ -31,6 +31,7 @@ import coinmarket
 import traceback
 import time
 import RPi.GPIO as GPIO
+import os
 import pickle
 COLORED = 1
 UNCOLORED = 0
@@ -40,12 +41,9 @@ epd.init()
 GPIO.setmode(GPIO.BCM)
 mode = 0
 displayMode = ['Cmc','Bittrex','Quadrigacx']
-
-def stub(self):
-    print("stub")
+isUpdatingDisplay = False
 
 def main():
-
     updateallcoins()
     scheduler = BackgroundScheduler()
     scheduler.add_job(updateallcoins, 'interval', seconds=45)
@@ -54,25 +52,32 @@ def main():
     autoUpdateDisplay()
     chan_list = [5, 6, 13, 19]
     GPIO.setup(chan_list, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    GPIO.add_event_detect(5, GPIO.RISING)
-    GPIO.add_event_detect(6, GPIO.RISING)
-    GPIO.add_event_detect(13, GPIO.RISING)
-    GPIO.add_event_detect(19, GPIO.RISING)
-    GPIO.add_event_callback(5, loadHomepage)
-    GPIO.add_event_callback(6, nextPage)
+    #GPIO.add_event_detect(5, GPIO.RISING)
+    #GPIO.add_event_detect(6, GPIO.RISING)
+    #GPIO.add_event_detect(13, GPIO.RISING)
+    #GPIO.add_event_detect(19, GPIO.RISING)
+    #GPIO.add_event_callback(5, loadHomepage)
+    #GPIO.add_event_callback(6, nextPage)
     #GPIO.add_event_callback(13, my_callback)
     #GPIO.add_event_callback(19, my_callback)
-    while True:
-        try:
+    try:
 
-            # This is here to simulate application activity (which keeps the main thread alive).
-            while True:
-                time.sleep(.10)
-        except (KeyboardInterrupt, SystemExit):
-            # Not strictly necessary if daemonic mode is enabled but should be done if possible
-            scheduler.shutdown()
+        # This is here to simulate application activity (which keeps the main thread alive).
+        while True:
+            if GPIO.input(6) == GPIO.LOW:
+                nextPage()
+            if GPIO.input(5) == GPIO.LOW:
+                loadHomepage()
+            if GPIO.input(19) == GPIO.LOW:
+                os.system("sudo shutdown -h now")
+            time.sleep(.10)
+    except (KeyboardInterrupt, SystemExit):
+        # Not strictly necessary if daemonic mode is enabled but should be done if possible
+        scheduler.shutdown()
 
-def loadHomepage(self):
+def loadHomepage():
+    global isUpdatingDisplay
+    isUpdatingDisplay = True
     global mode
     mode = 0;
     blackImage, redImage = generateMarketDisplay(markets, 'Cmc')
@@ -80,8 +85,11 @@ def loadHomepage(self):
     frame_black = epd.get_frame_buffer(blackImage)
     frame_red = epd.get_frame_buffer(redImage)
     epd.display_frame(frame_black, frame_red)
-
-def nextPage(self):
+    epd.sleep()
+    isUpdatingDisplay = False
+def nextPage():
+    global isUpdatingDisplay
+    isUpdatingDisplay = True
     global mode
     mode += 1
     mode = mode % 3
@@ -91,8 +99,9 @@ def nextPage(self):
     frame_black = epd.get_frame_buffer(blackImage)
     frame_red = epd.get_frame_buffer(redImage)
     epd.display_frame(frame_black, frame_red)
-    #pickle.dump(mode, open("mode.pkl", "wb"))
+    epd.sleep()
     print("done update display")
+    isUpdatingDisplay = False
 def updateallcoins():
     try:
         print("updating coins")
@@ -172,13 +181,14 @@ def generateMarketDisplay(markets,exchange):
     return blackImage,redImage
 
 def autoUpdateDisplay():
-    print("updaing display")
-    epd.init()
-    #mode = pickle.load(open("mode.pkl", "rb"))
-    blackImage, redImage = generateMarketDisplay(markets, displayMode[mode])
-    frame_black = epd.get_frame_buffer(blackImage)
-    frame_red = epd.get_frame_buffer(redImage)
-    epd.display_frame(frame_black, frame_red)
-
+    if not isUpdatingDisplay:
+        print("updating display")
+        epd.init()
+        #mode = pickle.load(open("mode.pkl", "rb"))
+        blackImage, redImage = generateMarketDisplay(markets, displayMode[mode])
+        frame_black = epd.get_frame_buffer(blackImage)
+        frame_red = epd.get_frame_buffer(redImage)
+        epd.display_frame(frame_black, frame_red)
+        epd.sleep()
 if __name__ == '__main__':
     main()
